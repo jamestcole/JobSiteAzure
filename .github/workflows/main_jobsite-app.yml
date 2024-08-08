@@ -51,11 +51,16 @@ jobs:
           name: backend-app
           path: backend
 
+      - name: Compress frontend build output
+        run: |
+          cd frontend
+          tar -czf frontend-app.tar.gz build
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: frontend-app
-          path: frontend
+          path: frontend/frontend-app.tar.gz
 
   deploy:
     runs-on: ubuntu-latest
