@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import Signup from './components/Signup';
 import Login from './components/Login';
 import JobListings from './components/JobListings';
@@ -11,19 +11,19 @@ const App = () => {
       <div>
         <nav>
           <ul>
-            <li><a href="/signup">Sign Up</a></li>
-            <li><a href="/login">Login</a></li>
-            <li><a href="/jobs">Job Listings</a></li>
-            <li><a href="/history">Application History</a></li>
+            <li><Link to="/signup">Sign Up</Link></li>
+            <li><Link to="/login">Login</Link></li>
+            <li><Link to="/jobs">Job Listings</Link></li>
+            <li><Link to="/history">Application History</Link></li>
           </ul>
         </nav>
-        <Switch>
-          <Route path="/signup" component={Signup} />
-          <Route path="/login" component={Login} />
-          <Route path="/jobs" component={JobListings} />
-          <Route path="/history" component={ApplicationHistory} />
-          <Route path="/" exact component={JobListings} />
-        </Switch>
+        <Routes>
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/jobs" element={<JobListings />} />
+          <Route path="/history" element={<ApplicationHistory />} />
+          <Route path="/" element={<JobListings />} />
+        </Routes>
       </div>
     </Router>
   );
