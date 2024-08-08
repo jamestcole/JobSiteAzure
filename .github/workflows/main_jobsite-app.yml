@@ -81,3 +81,13 @@ jobs:
           app-name: 'jobsite-app'  # Ensure this matches your Azure App Service for the backend
           slot-name: 'Production'
           package: .
+
+      - name: Run post-deployment script
+        run: |
+          curl -X POST \
+            -u "$AZURE_USERNAME:$AZURE_PASSWORD" \
+            -d '{"command": "./start_project.sh"}' \
+            https://<your-app-service>.scm.azurewebsites.net/api/command
+        env:
+          AZURE_USERNAME: ${{ secrets.AZURE_USERNAME }}
+          AZURE_PASSWORD: ${{ secrets.AZURE_PASSWORD }}
