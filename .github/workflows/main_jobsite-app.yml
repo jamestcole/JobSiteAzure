@@ -21,46 +21,32 @@ jobs:
         with:
           node-version: '20.x'
 
-      - name: npm install backend
+      - name: Install, build, and test backend
         run: |
           cd backend
           npm install
-
-      - name: build and test backend
-        run: |
-          cd backend
           npm run build --if-present
-          #npm run test --if-present
+          npm run test --if-present
 
-      - name: npm install frontend
+      - name: Install, build, and test frontend
         run: |
           cd frontend
           npm install
           npm run build --if-present
-          #npm run test --if-present
+          npm run test --if-present
 
-      - name: build, and test frontend
+      - name: Compress build artifacts
         run: |
-          cd frontend
-          npm run build --if-present
-          #npm run test --if-present
-      
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-app
-          path: backend
-
-      - name: Compress frontend build output
-        run: |
-          cd frontend
-          tar -czf frontend-app.tar.gz build
+          tar -czf backend.tar.gz backend
+          tar -czf frontend.tar.gz frontend
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-app
-          path: frontend/frontend-app.tar.gz
+          name: node-app
+          path: |
+            backend.tar.gz
+            frontend.tar.gz
 
   deploy:
     runs-on: ubuntu-latest
@@ -72,15 +58,15 @@ jobs:
       id-token: write #This is required for requesting the JWT
 
     steps:
-      - name: Download backend artifact
+      - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: backend-app
+          name: node-app
 
-      - name: Download frontend artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-app
+      - name: Decompress build artifacts
+        run: |
+          tar -xzf backend.tar.gz
+          tar -xzf frontend.tar.gz
       
       - name: Login to Azure
         uses: azure/login@v2
@@ -92,13 +78,6 @@ jobs:
       - name: Deploy backend to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'jobsite-backend'  # Ensure this matches your Azure App Service for the backend
+          app-name: 'jobsite-app'  # Ensure this matches your Azure App Service for the backend
           slot-name: 'Production'
-          package: 'backend'
-
-      - name: Deploy frontend to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'jobsite-frontend'  # Ensure this matches your Azure App Service for the frontend
-          slot-name: 'Production'
-          package: 'frontend'
+          package: .
