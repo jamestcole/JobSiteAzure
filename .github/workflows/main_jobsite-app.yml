@@ -39,13 +39,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-app
-          path: backend/build
+          path: backend
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: frontend-app
-          path: frontend/build
+          path: frontend
 
   deploy:
     runs-on: ubuntu-latest
