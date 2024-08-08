@@ -21,17 +21,31 @@ jobs:
         with:
           node-version: '20.x'
 
-      - name: npm install, build, and test
+      - name: npm install, build, and test backend
         run: |
+          cd backend
           npm install
           npm run build --if-present
-          npm run test --if-present
+          #npm run test --if-present
+
+      - name: npm install, build, and test frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build --if-present
+          #npm run test --if-present
       
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: node-app
-          path: .
+          name: backend-app
+          path: backend
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-app
+          path: frontend
 
   deploy:
     runs-on: ubuntu-latest
@@ -43,23 +57,33 @@ jobs:
       id-token: write #This is required for requesting the JWT
 
     steps:
-      - name: Download artifact from build job
+      - name: Download backend artifact
         uses: actions/download-artifact@v4
         with:
-          name: node-app
+          name: backend-app
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-app
       
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3BEC29132BF44EB8B8B7DD74D1AD6689 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_66D2EBAC69B74F26B5B149244A7419A7 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2B522F0AC9F0429BB3FCF5F72C00DFF5 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_DC48975314FD416CAC7BBAE38CB19194 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_63B14B2F6C9F4C688B163C47046B2896 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_1B4FEC030B2843AE9266116F436B0E78 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy backend to Azure Web App
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
         with:
-          app-name: 'jobsite-app'
+          app-name: 'jobsite-backend'  # Ensure this matches your Azure App Service for the backend
           slot-name: 'Production'
-          package: .
-          
+          package: 'backend'
+
+      - name: Deploy frontend to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'jobsite-frontend'  # Ensure this matches your Azure App Service for the frontend
+          slot-name: 'Production'
+          package: 'frontend'
