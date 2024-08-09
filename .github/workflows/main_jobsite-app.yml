@@ -99,7 +99,7 @@ jobs:
           curl -X POST \
             -u "$AZURE_USERNAME:$AZURE_PASSWORD" \
             -d '{"command": "./start_project.sh"}' \
-            https://jobsite-app.azurewebsites.net/api/command
+            https://jobsite-app.scm.azurewebsites.net/api/command
         env:
           AZURE_USERNAME: ${{ secrets.AZURE_USERNAME }}
           AZURE_PASSWORD: ${{ secrets.AZURE_PASSWORD }}
