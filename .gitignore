@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-.~$cumentation for Apprenticeships service.docx
-.Documentation for Apprenticeships service.docx
-.App.js
+/~$cumentation for Apprenticeships service.docx
+/Documentation for Apprenticeships service.docx
+/App.js
 
