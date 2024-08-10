@@ -72,8 +72,30 @@ jobs:
 
       - name: Decompress build artifacts
         run: |
-          tar -xzf backend.tar.gz -C /home/site/wwwroot/
-          tar -xzf frontend.tar.gz -C /home/site/wwwroot/
+          # Ensure the wwwroot directory exists
+          if [ ! -d "/home/site/wwwroot" ]; then
+            echo "Directory /home/site/wwwroot does not exist, creating it..."
+            mkdir -p /home/site/wwwroot
+          fi
+          
+          # Decompress backend files
+          if [ -f "backend.tar.gz" ]; then
+            echo "Decompressing backend.tar.gz to /home/site/wwwroot/"
+            tar -xzf backend.tar.gz -C /home/site/wwwroot/
+          else
+            echo "Error: backend.tar.gz not found!"
+            exit 1
+          fi
+      
+          # Decompress frontend files
+          if [ -f "frontend.tar.gz" ]; then
+            echo "Decompressing frontend.tar.gz to /home/site/wwwroot/"
+            tar -xzf frontend.tar.gz -C /home/site/wwwroot/
+          else
+            echo "Error: frontend.tar.gz not found!"
+            exit 1
+          fi
+        shell: bash
 
       - name: Download start script artifact
         uses: actions/download-artifact@v4
