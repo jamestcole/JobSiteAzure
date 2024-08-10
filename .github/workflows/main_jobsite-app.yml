@@ -72,8 +72,8 @@ jobs:
 
       - name: Decompress build artifacts
         run: |
-          tar -xzf backend.tar.gz
-          tar -xzf frontend.tar.gz
+          tar -xzf backend.tar.gz -C /home/site/wwwroot/
+          tar -xzf frontend.tar.gz -C /home/site/wwwroot/
 
       - name: Download start script artifact
         uses: actions/download-artifact@v4
@@ -96,10 +96,17 @@ jobs:
 
       - name: Run post-deployment script
         run: |
-          curl -X POST \
-            -u "$AZURE_USERNAME:$AZURE_PASSWORD" \
-            -d '{"command": "./start_project.sh"}' \
-            https://jobsite-app.scm.azurewebsites.net/api/command
+          # Ensure the script is executable
+          chmod +x ./start_project.sh
+    
+          # Copy the script to the Azure Web App
+          az webapp config appsettings set --name jobsite-app --resource-group jobsite-rg --settings WEBSITE_RUN_FROM_PACKAGE=1
+    
+          # Run the script on the Azure Web App via Kudu SSH
+          ssh-keyscan jobsite-app.scm.azurewebsites.net >> ~/.ssh/known_hosts
+          scp ./start_project.sh $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net:/home/site/wwwroot/
+          ssh $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net 'bash /home/site/wwwroot/start_project.sh'
+
         env:
           AZURE_USERNAME: ${{ secrets.AZURE_USERNAME }}
           AZURE_PASSWORD: ${{ secrets.AZURE_PASSWORD }}
