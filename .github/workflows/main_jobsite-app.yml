@@ -81,10 +81,12 @@ jobs:
 
       - name: Ensure /home/site/wwwroot exists
         run: |
-          ssh $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net "mkdir -p /home/site/wwwroot"
+          sudo apt-get install sshpass  # Install sshpass if not already installed
+          sshpass -p ${{ secrets.AZURE_PASSWORD }} ssh -o StrictHostKeyChecking=no ${{ secrets.AZURE_USERNAME }}@jobsite-app.scm.azurewebsites.net "mkdir -p /home/site/wwwroot"
         env:
           AZURE_USERNAME: ${{ secrets.AZURE_USERNAME }}
           AZURE_PASSWORD: ${{ secrets.AZURE_PASSWORD }}
+
 
       - name: Decompress build artifacts
         run: |
