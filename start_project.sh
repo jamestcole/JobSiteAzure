@@ -22,6 +22,7 @@ start_frontend() {
   echo "Starting frontend server..."
   cd frontend || { echo "Frontend directory not found"; exit 1; }
   npm install || { echo "Failed to install frontend dependencies"; exit 1; }
+  export PORT=3000
   npm start &
   FRONTEND_PID=$!
   cd ..
@@ -53,3 +54,4 @@ trap cleanup EXIT
 while true; do
   sleep 1
 done
+
