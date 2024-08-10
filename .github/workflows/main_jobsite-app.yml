@@ -81,10 +81,16 @@ jobs:
 
       - name: Ensure /home/site/wwwroot exists
         run: |
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} ${{ secrets.AZURE_USERNAME }}@jobsite-app.scm.azurewebsites.net "mkdir -p /home/site/wwwroot"
+          # Write the private key to a file
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/authorized_keys
+          chmod 600 ~/.ssh/authorized_keys
+
+          # Create the directory on the remote server
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/authorized_keys ${{ secrets.AZURE_USERNAME }}@jobsite-app.scm.azurewebsites.net "mkdir -p /home/site/wwwroot"
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           AZURE_USERNAME: ${{ secrets.AZURE_USERNAME }}
+
 
 
       - name: Decompress build artifacts
