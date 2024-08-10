@@ -1,6 +1,3 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
 name: Build and deploy Node.js app to Azure Web App - jobsite-app
 
 on:
@@ -61,8 +58,8 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read  
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
@@ -70,16 +67,11 @@ jobs:
         with:
           name: node-app
 
-      - name: Decompress build artifacts
-        run: |
-          tar -xzf backend.tar.gz
-          tar -xzf frontend.tar.gz
-
       - name: Download start script artifact
         uses: actions/download-artifact@v4
         with:
           name: start-script
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -87,19 +79,36 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_93C5A1B5288B4820B4AD1814C993E7A7 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_A6B92DF7F30F4DF08FC0E26FF1C3879D }}
 
-      - name: Deploy backend to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'jobsite-app'  # Ensure this matches your Azure App Service for the backend
-          slot-name: 'Production'
-          package: .
+      - name: Ensure /home/site/wwwroot exists
+        run: |
+          # Write the private key to a file
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/authorized_keys
+          chmod 600 ~/.ssh/authorized_keys
+
+          # Create the directory on the remote server
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/authorized_keys ${{ secrets.AZURE_USERNAME }}@jobsite-app.scm.azurewebsites.net "mkdir -p /home/site/wwwroot"
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          AZURE_USERNAME: ${{ secrets.AZURE_USERNAME }}
+
+
+
+      - name: Decompress build artifacts
+        run: |
+          scp backend.tar.gz $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net:/home/site/wwwroot/
+          scp frontend.tar.gz $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net:/home/site/wwwroot/
+          ssh $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net "tar -xzf /home/site/wwwroot/backend.tar.gz -C /home/site/wwwroot/ && tar -xzf /home/site/wwwroot/frontend.tar.gz -C /home/site/wwwroot/"
+        env:
+          AZURE_USERNAME: ${{ secrets.AZURE_USERNAME }}
+          AZURE_PASSWORD: ${{ secrets.AZURE_PASSWORD }}
 
       - name: Run post-deployment script
         run: |
-          curl -X POST \
-            -u "$AZURE_USERNAME:$AZURE_PASSWORD" \
-            -d '{"command": "./start_project.sh"}' \
-            https://jobsite-app.scm.azurewebsites.net/api/command
+          # Ensure the script is executable
+          ssh $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net "chmod +x /home/site/wwwroot/start_project.sh"
+    
+          # Run the script on the Azure Web App
+          ssh $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net "/home/site/wwwroot/start_project.sh"
         env:
           AZURE_USERNAME: ${{ secrets.AZURE_USERNAME }}
           AZURE_PASSWORD: ${{ secrets.AZURE_PASSWORD }}
