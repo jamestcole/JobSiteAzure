@@ -1,6 +1,3 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
 name: Build and deploy Node.js app to Azure Web App - jobsite-app
 
 on:
@@ -61,8 +58,8 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read  
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
@@ -70,38 +67,11 @@ jobs:
         with:
           name: node-app
 
-      - name: Decompress build artifacts
-        run: |
-          # Ensure the wwwroot directory exists
-          if [ ! -d "/home/site/wwwroot" ]; then
-            echo "Directory /home/site/wwwroot does not exist, creating it..."
-            mkdir -p /home/site/wwwroot
-          fi
-          
-          # Decompress backend files
-          if [ -f "backend.tar.gz" ]; then
-            echo "Decompressing backend.tar.gz to /home/site/wwwroot/"
-            tar -xzf backend.tar.gz -C /home/site/wwwroot/
-          else
-            echo "Error: backend.tar.gz not found!"
-            exit 1
-          fi
-      
-          # Decompress frontend files
-          if [ -f "frontend.tar.gz" ]; then
-            echo "Decompressing frontend.tar.gz to /home/site/wwwroot/"
-            tar -xzf frontend.tar.gz -C /home/site/wwwroot/
-          else
-            echo "Error: frontend.tar.gz not found!"
-            exit 1
-          fi
-        shell: bash
-
       - name: Download start script artifact
         uses: actions/download-artifact@v4
         with:
           name: start-script
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -109,26 +79,29 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_93C5A1B5288B4820B4AD1814C993E7A7 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_A6B92DF7F30F4DF08FC0E26FF1C3879D }}
 
-      - name: Deploy backend to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'jobsite-app'  # Ensure this matches your Azure App Service for the backend
-          slot-name: 'Production'
-          package: .
+      - name: Ensure /home/site/wwwroot exists
+        run: |
+          ssh $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net "mkdir -p /home/site/wwwroot"
+        env:
+          AZURE_USERNAME: ${{ secrets.AZURE_USERNAME }}
+          AZURE_PASSWORD: ${{ secrets.AZURE_PASSWORD }}
+
+      - name: Decompress build artifacts
+        run: |
+          scp backend.tar.gz $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net:/home/site/wwwroot/
+          scp frontend.tar.gz $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net:/home/site/wwwroot/
+          ssh $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net "tar -xzf /home/site/wwwroot/backend.tar.gz -C /home/site/wwwroot/ && tar -xzf /home/site/wwwroot/frontend.tar.gz -C /home/site/wwwroot/"
+        env:
+          AZURE_USERNAME: ${{ secrets.AZURE_USERNAME }}
+          AZURE_PASSWORD: ${{ secrets.AZURE_PASSWORD }}
 
       - name: Run post-deployment script
         run: |
           # Ensure the script is executable
-          chmod +x ./start_project.sh
+          ssh $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net "chmod +x /home/site/wwwroot/start_project.sh"
     
-          # Copy the script to the Azure Web App
-          az webapp config appsettings set --name jobsite-app --resource-group jobsite-rg --settings WEBSITE_RUN_FROM_PACKAGE=1
-    
-          # Run the script on the Azure Web App via Kudu SSH
-          ssh-keyscan jobsite-app.scm.azurewebsites.net >> ~/.ssh/known_hosts
-          scp ./start_project.sh $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net:/home/site/wwwroot/
-          ssh $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net 'bash /home/site/wwwroot/start_project.sh'
-
+          # Run the script on the Azure Web App
+          ssh $AZURE_USERNAME@jobsite-app.scm.azurewebsites.net "/home/site/wwwroot/start_project.sh"
         env:
           AZURE_USERNAME: ${{ secrets.AZURE_USERNAME }}
           AZURE_PASSWORD: ${{ secrets.AZURE_PASSWORD }}
